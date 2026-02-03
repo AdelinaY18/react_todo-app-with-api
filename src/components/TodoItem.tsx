@@ -24,6 +24,7 @@ export const TodoItem: React.FC<{
 
     if (!trimmed) {
       onDelete?.();
+
       return;
     }
 
@@ -45,6 +46,7 @@ export const TodoItem: React.FC<{
         {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
         <input
           type="checkbox"
+          data-cy="TodoStatus"
           className="todo__status"
           checked={todo.completed}
           onChange={onToggle}
@@ -81,7 +83,10 @@ export const TodoItem: React.FC<{
           onChange={e => setNewTitle(e.target.value)}
           onBlur={finishEdit}
           onKeyUp={e => {
-            if (e.key === 'Enter') finishEdit();
+            if (e.key === 'Enter') {
+              finishEdit();
+            }
+
             if (e.key === 'Escape') {
               setIsEditing(false);
               setNewTitle(todo.title);
