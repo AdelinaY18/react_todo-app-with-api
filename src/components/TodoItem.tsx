@@ -24,31 +24,26 @@ export const TodoItem: React.FC<{
 
     if (!trimmed) {
       onDelete?.();
-
       return;
     }
 
-    if (trimmed !== todo.title) {
-      if (onRename) {
-        onRename(trimmed)
-          .then(() => {
-            setIsEditing(false);
-            setError(false);
-          })
-          .catch(() => setError(true));
-      }
+    if (trimmed !== todo.title && onRename) {
+      onRename(trimmed)
+        .then(() => {
+          setIsEditing(false);
+          setError(false);
+        })
+        .catch(() => setError(true));
     } else {
       setIsEditing(false);
     }
   };
 
-  const inputId = `todo-${todo.id}`;
-
   return (
     <div data-cy="Todo" className={`todo ${todo.completed ? 'completed' : ''}`}>
-      <label htmlFor={inputId} className="todo__status-label">
+      <label className="todo__status-label">
+        {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
         <input
-          id={inputId}
           type="checkbox"
           className="todo__status"
           checked={todo.completed}
@@ -86,10 +81,7 @@ export const TodoItem: React.FC<{
           onChange={e => setNewTitle(e.target.value)}
           onBlur={finishEdit}
           onKeyUp={e => {
-            if (e.key === 'Enter') {
-              finishEdit();
-            }
-
+            if (e.key === 'Enter') finishEdit();
             if (e.key === 'Escape') {
               setIsEditing(false);
               setNewTitle(todo.title);
