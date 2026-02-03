@@ -7,20 +7,24 @@ export const TodoItem: React.FC<{
   onToggle?: () => void;
   onRename?: (title: string) => Promise<void>;
   isProcessing?: boolean;
-}> = ({ todo, onDelete, onToggle, onRename, isProcessing }) => {
+}> = ({ todo, onDelete, onRename, isProcessing }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newTitle, setNewTitle] = useState(todo.title);
   const [error, setError] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isEditing) inputRef.current?.focus();
+    if (isEditing) {
+      inputRef.current?.focus();
+    }
   }, [isEditing]);
 
   const finishEdit = () => {
     const trimmed = newTitle.trim();
+
     if (!trimmed) {
       onDelete?.();
+
       return;
     }
 
@@ -46,9 +50,9 @@ export const TodoItem: React.FC<{
           type="checkbox"
           className="todo__status"
           checked={todo.completed}
-          onChange={onToggle}
           disabled={isProcessing}
         />
+        <span className="is-sr-only">Mark todo as completed</span>
       </label>
 
       {!isEditing ? (
@@ -79,7 +83,10 @@ export const TodoItem: React.FC<{
           onChange={e => setNewTitle(e.target.value)}
           onBlur={finishEdit}
           onKeyUp={e => {
-            if (e.key === 'Enter') finishEdit();
+            if (e.key === 'Enter') {
+              finishEdit();
+            }
+
             if (e.key === 'Escape') {
               setIsEditing(false);
               setNewTitle(todo.title);

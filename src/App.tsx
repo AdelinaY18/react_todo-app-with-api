@@ -36,7 +36,9 @@ export const App: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!USER_ID) return;
+    if (!USER_ID) {
+      return;
+    }
 
     getTodos()
       .then(setTodos)
@@ -49,19 +51,29 @@ export const App: React.FC = () => {
     }
   }, [tempTodo, processingIds]);
 
-  if (!USER_ID) return <UserWarning />;
+  if (!USER_ID) {
+    return <UserWarning />;
+  }
 
   const visibleTodos = todos.filter(todo => {
-    if (filter === Filter.Active) return !todo.completed;
-    if (filter === Filter.Completed) return todo.completed;
+    if (filter === Filter.Active) {
+      return !todo.completed;
+    }
+
+    if (filter === Filter.Completed) {
+      return todo.completed;
+    }
+
     return true;
   });
 
   const handleAddTodo = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = title.trim();
+
     if (!trimmed) {
       setError(ErrorMessage.Empty);
+
       return;
     }
 
@@ -71,6 +83,7 @@ export const App: React.FC = () => {
       completed: false,
       userId: USER_ID,
     };
+
     setTempTodo(newTodo);
 
     createTodo(newTodo)
@@ -105,6 +118,7 @@ export const App: React.FC = () => {
 
   const handleRename = (todo: Todo, newTitle: string) => {
     setProcessingIds(ids => [...ids, todo.id]);
+
     return updateTodo({ ...todo, title: newTitle })
       .then(updated =>
         setTodos(prev => prev.map(t => (t.id === updated.id ? updated : t))),
@@ -118,8 +132,11 @@ export const App: React.FC = () => {
 
   const handleToggleAll = () => {
     const allCompleted = todos.every(t => t.completed);
+
     todos.forEach(t => {
-      if (t.completed === allCompleted) handleToggle(t);
+      if (t.completed === allCompleted) {
+        handleToggle(t);
+      }
     });
   };
 
