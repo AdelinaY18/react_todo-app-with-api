@@ -7,7 +7,7 @@ export const TodoItem: React.FC<{
   onToggle?: () => void;
   onRename?: (title: string) => Promise<void>;
   isProcessing?: boolean;
-}> = ({ todo, onDelete, onRename, isProcessing }) => {
+}> = ({ todo, onDelete, onToggle, onRename, isProcessing }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newTitle, setNewTitle] = useState(todo.title);
   const [error, setError] = useState(false);
@@ -42,17 +42,20 @@ export const TodoItem: React.FC<{
     }
   };
 
+  const inputId = `todo-${todo.id}`;
+
   return (
     <div data-cy="Todo" className={`todo ${todo.completed ? 'completed' : ''}`}>
-      <label className="todo__status-label">
+      <label htmlFor={inputId} className="todo__status-label">
         <input
-          data-cy="TodoStatus"
+          id={inputId}
           type="checkbox"
           className="todo__status"
           checked={todo.completed}
+          onChange={onToggle}
           disabled={isProcessing}
         />
-        <span className="is-sr-only">Mark todo as completed</span>
+        <span className="todo__status-custom" aria-hidden="true" />
       </label>
 
       {!isEditing ? (
