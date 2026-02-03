@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import cn from 'classnames';
 import { Todo } from '../types/Todo';
 
 export const TodoItem: React.FC<{
@@ -10,62 +9,57 @@ export const TodoItem: React.FC<{
   isProcessing?: boolean;
 }> = ({ todo, onDelete, onToggle, onRename, isProcessing }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [value, setValue] = useState(todo.title);
-
+  const [newTitle, setNewTitle] = useState(todo.title);
+  const [error, setError] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isEditing) {
-      inputRef.current?.focus();
-    }
+    if (isEditing) inputRef.current?.focus();
   }, [isEditing]);
 
-  const finishEdit = async () => {
-    const trimmed = value.trim();
-
+  const finishEdit = () => {
+    const trimmed = newTitle.trim();
     if (!trimmed) {
       onDelete?.();
-
       return;
     }
 
-    if (trimmed === todo.title) {
+    if (trimmed !== todo.title) {
+      if (onRename) {
+        onRename(trimmed)
+          .then(() => {
+            setIsEditing(false);
+            setError(false);
+          })
+          .catch(() => setError(true));
+      }
+    } else {
       setIsEditing(false);
-
-      return;
     }
-
-    try {
-      await onRename?.(trimmed);
-      setIsEditing(false);
-    } catch {}
   };
 
   return (
-    <div data-cy="Todo" className={cn('todo', { completed: todo.completed })}>
+    <div data-cy="Todo" className={`todo ${todo.completed ? 'completed' : ''}`}>
       <label className="todo__status-label">
         <input
+          data-cy="TodoStatus"
           type="checkbox"
           className="todo__status"
           checked={todo.completed}
-          disabled={isProcessing}
           onChange={onToggle}
+          disabled={isProcessing}
         />
-        <span className="is-sr-only">Mark todo as completed</span>
       </label>
+
       {!isEditing ? (
         <>
           <span
             data-cy="TodoTitle"
             className="todo__title"
-            onDoubleClick={() => {
-              setValue(todo.title);
-              setIsEditing(true);
-            }}
+            onDoubleClick={() => setIsEditing(true)}
           >
             {todo.title}
           </span>
-
           <button
             type="button"
             className="todo__remove"
@@ -80,17 +74,16 @@ export const TodoItem: React.FC<{
         <input
           ref={inputRef}
           data-cy="TodoTitleField"
-          className="todo__title-field"
-          value={value}
-          onChange={e => setValue(e.target.value)}
+          className={`todo__title-field ${error ? 'is-error' : ''}`}
+          value={newTitle}
+          onChange={e => setNewTitle(e.target.value)}
           onBlur={finishEdit}
           onKeyUp={e => {
-            if (e.key === 'Enter') {
-              finishEdit();
-            }
-
+            if (e.key === 'Enter') finishEdit();
             if (e.key === 'Escape') {
               setIsEditing(false);
+              setNewTitle(todo.title);
+              setError(false);
             }
           }}
         />
@@ -98,7 +91,7 @@ export const TodoItem: React.FC<{
 
       <div
         data-cy="TodoLoader"
-        className={cn('modal overlay', { 'is-active': isProcessing })}
+        className={`modal overlay ${isProcessing ? 'is-active' : ''}`}
       >
         <div className="modal-background has-background-white-ter" />
         <div className="loader" />

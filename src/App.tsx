@@ -32,21 +32,15 @@ export const App: React.FC = () => {
   const [error, setError] = useState<ErrorMessage>(ErrorMessage.None);
   const [filter, setFilter] = useState<Filter>(Filter.All);
   const [title, setTitle] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!USER_ID) {
-      return;
-    }
-
-    setIsLoading(true);
+    if (!USER_ID) return;
 
     getTodos()
       .then(setTodos)
-      .catch(() => setError(ErrorMessage.Load))
-      .finally(() => setIsLoading(false));
+      .catch(() => setError(ErrorMessage.Load));
   }, []);
 
   useEffect(() => {
@@ -55,30 +49,19 @@ export const App: React.FC = () => {
     }
   }, [tempTodo, processingIds]);
 
-  if (!USER_ID) {
-    return <UserWarning />;
-  }
+  if (!USER_ID) return <UserWarning />;
 
   const visibleTodos = todos.filter(todo => {
-    if (filter === Filter.Active) {
-      return !todo.completed;
-    }
-
-    if (filter === Filter.Completed) {
-      return todo.completed;
-    }
-
+    if (filter === Filter.Active) return !todo.completed;
+    if (filter === Filter.Completed) return todo.completed;
     return true;
   });
 
   const handleAddTodo = (e: React.FormEvent) => {
     e.preventDefault();
-
     const trimmed = title.trim();
-
     if (!trimmed) {
       setError(ErrorMessage.Empty);
-
       return;
     }
 
@@ -88,7 +71,6 @@ export const App: React.FC = () => {
       completed: false,
       userId: USER_ID,
     };
-
     setTempTodo(newTodo);
 
     createTodo(newTodo)
@@ -105,49 +87,40 @@ export const App: React.FC = () => {
 
   const handleDelete = (id: number) => {
     setProcessingIds(ids => [...ids, id]);
-
     deleteTodoRequest(id)
       .then(() => setTodos(prev => prev.filter(t => t.id !== id)))
       .catch(() => setError(ErrorMessage.Delete))
-      .finally(() => {
-        setProcessingIds(ids => ids.filter(i => i !== id));
-      });
+      .finally(() => setProcessingIds(ids => ids.filter(i => i !== id)));
   };
 
   const handleToggle = (todo: Todo) => {
     setProcessingIds(ids => [...ids, todo.id]);
-
     updateTodo({ ...todo, completed: !todo.completed })
-      .then(updated => {
-        setTodos(prev => prev.map(t => (t.id === updated.id ? updated : t)));
-      })
+      .then(updated =>
+        setTodos(prev => prev.map(t => (t.id === updated.id ? updated : t))),
+      )
       .catch(() => setError(ErrorMessage.Update))
-      .finally(() => {
-        setProcessingIds(ids => ids.filter(i => i !== todo.id));
-      });
+      .finally(() => setProcessingIds(ids => ids.filter(i => i !== todo.id)));
   };
 
   const handleRename = (todo: Todo, newTitle: string) => {
     setProcessingIds(ids => [...ids, todo.id]);
-
     return updateTodo({ ...todo, title: newTitle })
-      .then(updated => {
-        setTodos(prev => prev.map(t => (t.id === updated.id ? updated : t)));
-      })
-      .catch(() => {
+      .then(updated =>
+        setTodos(prev => prev.map(t => (t.id === updated.id ? updated : t))),
+      )
+      .catch(err => {
         setError(ErrorMessage.Update);
-        throw new Error();
+        throw err;
       })
-      .finally(() => {
-        setProcessingIds(ids => ids.filter(i => i !== todo.id));
-      });
+      .finally(() => setProcessingIds(ids => ids.filter(i => i !== todo.id)));
   };
 
   const handleToggleAll = () => {
     const allCompleted = todos.every(t => t.completed);
-    const todosToUpdate = todos.filter(t => t.completed === allCompleted);
-
-    todosToUpdate.forEach(handleToggle);
+    todos.forEach(t => {
+      if (t.completed === allCompleted) handleToggle(t);
+    });
   };
 
   const handleClearCompleted = () => {
@@ -163,12 +136,10 @@ export const App: React.FC = () => {
 
       <div className="todoapp__content">
         <header className="todoapp__header">
-          {!isLoading && todos.length > 0 && (
+          {todos.length > 0 && (
             <button
               type="button"
-              className={`todoapp__toggle-all ${
-                todos.every(todo => todo.completed) ? 'active' : ''
-              }`}
+              className={`todoapp__toggle-all ${todos.every(t => t.completed) ? 'active' : ''}`}
               data-cy="ToggleAllButton"
               onClick={handleToggleAll}
             />
@@ -185,16 +156,18 @@ export const App: React.FC = () => {
           />
         </header>
 
-        <TodoList
-          todos={visibleTodos}
-          tempTodo={tempTodo}
-          processingIds={processingIds}
-          onDelete={handleDelete}
-          onToggle={handleToggle}
-          onRename={handleRename}
-        />
+        {visibleTodos.length > 0 || tempTodo ? (
+          <TodoList
+            todos={visibleTodos}
+            tempTodo={tempTodo}
+            processingIds={processingIds}
+            onDelete={handleDelete}
+            onToggle={handleToggle}
+            onRename={handleRename}
+          />
+        ) : null}
 
-        {!!todos.length && (
+        {todos.length > 0 && (
           <Footer
             activeCount={activeCount}
             todos={todos}
