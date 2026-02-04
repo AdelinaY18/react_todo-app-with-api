@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import classNames from 'classnames';
 import { Todo } from '../types/Todo';
 
 export const TodoItem: React.FC<{
@@ -10,7 +11,8 @@ export const TodoItem: React.FC<{
 }> = ({ todo, onDelete, onToggle, onRename, isProcessing }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newTitle, setNewTitle] = useState(todo.title);
-  const [error, setError] = useState(false);
+  const [isError, setIsError] = useState(false);
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -18,6 +20,12 @@ export const TodoItem: React.FC<{
       inputRef.current?.focus();
     }
   }, [isEditing]);
+
+  const cancelEdit = () => {
+    setIsEditing(false);
+    setNewTitle(todo.title);
+    setIsError(false);
+  };
 
   const finishEdit = () => {
     const trimmed = newTitle.trim();
@@ -32,18 +40,31 @@ export const TodoItem: React.FC<{
       onRename(trimmed)
         .then(() => {
           setIsEditing(false);
-          setError(false);
+          setIsError(false);
         })
-        .catch(() => setError(true));
+        .catch(() => setIsError(true));
     } else {
       setIsEditing(false);
     }
   };
 
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      finishEdit();
+    }
+
+    if (e.key === 'Escape') {
+      cancelEdit();
+    }
+  };
+
   return (
-    <div data-cy="Todo" className={`todo ${todo.completed ? 'completed' : ''}`}>
+    <div
+      data-cy="Todo"
+      className={classNames('todo', { completed: todo.completed })}
+    >
+      {/*eslint-disable-next-line jsx-a11y/label-has-associated-control*/}
       <label className="todo__status-label">
-        {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
         <input
           type="checkbox"
           data-cy="TodoStatus"
@@ -64,6 +85,7 @@ export const TodoItem: React.FC<{
           >
             {todo.title}
           </span>
+
           <button
             type="button"
             className="todo__remove"
@@ -78,27 +100,21 @@ export const TodoItem: React.FC<{
         <input
           ref={inputRef}
           data-cy="TodoTitleField"
-          className={`todo__title-field ${error ? 'is-error' : ''}`}
+          className={classNames('todo__title-field', {
+            'is-error': isError,
+          })}
           value={newTitle}
           onChange={e => setNewTitle(e.target.value)}
           onBlur={finishEdit}
-          onKeyUp={e => {
-            if (e.key === 'Enter') {
-              finishEdit();
-            }
-
-            if (e.key === 'Escape') {
-              setIsEditing(false);
-              setNewTitle(todo.title);
-              setError(false);
-            }
-          }}
+          onKeyUp={handleKeyUp}
         />
       )}
 
       <div
         data-cy="TodoLoader"
-        className={`modal overlay ${isProcessing ? 'is-active' : ''}`}
+        className={classNames('modal overlay', {
+          'is-active': isProcessing,
+        })}
       >
         <div className="modal-background has-background-white-ter" />
         <div className="loader" />

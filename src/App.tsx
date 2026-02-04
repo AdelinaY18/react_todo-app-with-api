@@ -10,11 +10,11 @@ import {
   USER_ID,
 } from './api/todos';
 import { Todo } from './types/Todo';
-import { NewTodoForm } from './components/NewTodoForm';
 import { TodoList } from './components/TodoList';
 import { Footer } from './components/Footer';
 import { ErrorNotification } from './components/ErrorNotification';
 import { Filter } from './types/Filter';
+import { Header } from './components/Header';
 
 export enum ErrorMessage {
   None = '',
@@ -55,7 +55,7 @@ export const App: React.FC = () => {
     return <UserWarning />;
   }
 
-  const visibleTodos = todos.filter(todo => {
+  const filterTodos = (todo: Todo) => {
     if (filter === Filter.Active) {
       return !todo.completed;
     }
@@ -65,10 +65,13 @@ export const App: React.FC = () => {
     }
 
     return true;
-  });
+  };
+
+  const visibleTodos = todos.filter(filterTodos);
 
   const handleAddTodo = (e: React.FormEvent) => {
     e.preventDefault();
+
     const trimmed = title.trim();
 
     if (!trimmed) {
@@ -77,103 +80,114 @@ export const App: React.FC = () => {
       return;
     }
 
-    const newTodo: Todo = {
-      id: Date.now(),
+    const newTodo = {
       title: trimmed,
       completed: false,
       userId: USER_ID,
     };
 
-    setTempTodo(newTodo);
+    setTempTodo(newTodo as Todo);
 
-    createTodo(newTodo)
+    createTodo(newTodo as Todo)
       .then(todoFromServer => {
         setTodos(prev => [...prev, todoFromServer]);
         setTitle('');
-        setTempTodo(null);
       })
-      .catch(() => {
-        setError(ErrorMessage.Add);
-        setTempTodo(null);
-      });
+      .catch(() => setError(ErrorMessage.Add))
+      .finally(() => setTempTodo(null));
   };
 
   const handleDelete = (id: number) => {
-    setProcessingIds(ids => [...ids, id]);
+    setProcessingIds(prevIds => [...prevIds, id]);
+
     deleteTodoRequest(id)
-      .then(() => setTodos(prev => prev.filter(t => t.id !== id)))
+      .then(() =>
+        setTodos(prevTodos => prevTodos.filter(todoItem => todoItem.id !== id)),
+      )
       .catch(() => setError(ErrorMessage.Delete))
-      .finally(() => setProcessingIds(ids => ids.filter(i => i !== id)));
+      .finally(() =>
+        setProcessingIds(prevIds =>
+          prevIds.filter(processingId => processingId !== id),
+        ),
+      );
   };
 
   const handleToggle = (todo: Todo) => {
-    setProcessingIds(ids => [...ids, todo.id]);
+    setProcessingIds(prevIds => [...prevIds, todo.id]);
+
     updateTodo({ ...todo, completed: !todo.completed })
       .then(updated =>
-        setTodos(prev => prev.map(t => (t.id === updated.id ? updated : t))),
+        setTodos(prevTodos =>
+          prevTodos.map(todoItem =>
+            todoItem.id === updated.id ? updated : todoItem,
+          ),
+        ),
       )
       .catch(() => setError(ErrorMessage.Update))
-      .finally(() => setProcessingIds(ids => ids.filter(i => i !== todo.id)));
+      .finally(() =>
+        setProcessingIds(prevIds =>
+          prevIds.filter(processingId => processingId !== todo.id),
+        ),
+      );
   };
 
   const handleRename = (todo: Todo, newTitle: string) => {
-    setProcessingIds(ids => [...ids, todo.id]);
+    setProcessingIds(prevIds => [...prevIds, todo.id]);
 
     return updateTodo({ ...todo, title: newTitle })
       .then(updated =>
-        setTodos(prev => prev.map(t => (t.id === updated.id ? updated : t))),
+        setTodos(prevTodos =>
+          prevTodos.map(todoItem =>
+            todoItem.id === updated.id ? updated : todoItem,
+          ),
+        ),
       )
       .catch(err => {
         setError(ErrorMessage.Update);
         throw err;
       })
-      .finally(() => setProcessingIds(ids => ids.filter(i => i !== todo.id)));
+      .finally(() =>
+        setProcessingIds(prevIds =>
+          prevIds.filter(processingId => processingId !== todo.id),
+        ),
+      );
   };
 
   const handleToggleAll = () => {
-    const allCompleted = todos.every(t => t.completed);
+    const allCompleted = todos.every(todo => todo.completed);
 
-    todos.forEach(t => {
-      if (t.completed === allCompleted) {
-        handleToggle(t);
+    todos.forEach(todo => {
+      if (todo.completed === allCompleted) {
+        handleToggle(todo);
       }
     });
   };
 
   const handleClearCompleted = () => {
-    todos.filter(t => t.completed).forEach(t => handleDelete(t.id));
+    todos.filter(todo => todo.completed).forEach(todo => handleDelete(todo.id));
   };
 
-  const activeCount = todos.filter(t => !t.completed).length;
-  const hasCompleted = todos.some(t => t.completed);
+  const activeCount = todos.filter(todo => !todo.completed).length;
+  const hasCompleted = todos.some(todo => todo.completed);
 
   return (
     <div className="todoapp">
       <h1 className="todoapp__title">todos</h1>
 
       <div className="todoapp__content">
-        <header className="todoapp__header">
-          {todos.length > 0 && (
-            <button
-              type="button"
-              className={`todoapp__toggle-all ${todos.every(t => t.completed) ? 'active' : ''}`}
-              data-cy="ToggleAllButton"
-              onClick={handleToggleAll}
-            />
-          )}
+        <Header
+          todos={todos}
+          title={title}
+          setTitle={setTitle}
+          onSubmit={handleAddTodo}
+          tempTodo={tempTodo}
+          inputRef={inputRef}
+          error={error}
+          setError={setError}
+          onToggleAll={handleToggleAll}
+        />
 
-          <NewTodoForm
-            title={title}
-            setTitle={setTitle}
-            onSubmit={handleAddTodo}
-            disabled={!!tempTodo}
-            inputRef={inputRef}
-            error={error}
-            setError={setError}
-          />
-        </header>
-
-        {visibleTodos.length > 0 || tempTodo ? (
+        {(visibleTodos.length > 0 || tempTodo) && (
           <TodoList
             todos={visibleTodos}
             tempTodo={tempTodo}
@@ -182,7 +196,7 @@ export const App: React.FC = () => {
             onToggle={handleToggle}
             onRename={handleRename}
           />
-        ) : null}
+        )}
 
         {todos.length > 0 && (
           <Footer
