@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/control-has-associated-label */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { UserWarning } from './UserWarning';
 import {
   getTodos,
@@ -56,21 +56,25 @@ export const App: React.FC = () => {
   }
 
   const filterTodos = (todo: Todo) => {
-    if (filter === Filter.Active) {
-      return !todo.completed;
-    }
+    switch (filter) {
+      case Filter.Active:
+        return !todo.completed;
 
-    if (filter === Filter.Completed) {
-      return todo.completed;
-    }
+      case Filter.Completed:
+        return todo.completed;
 
-    return true;
+      case Filter.All:
+      default:
+        return true;
+    }
   };
 
   const visibleTodos = todos.filter(filterTodos);
 
-  const handleAddTodo = (e: React.FormEvent) => {
-    e.preventDefault();
+  const shouldShowList = visibleTodos.length > 0 || tempTodo;
+
+  const handleAddTodo = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
     const trimmed = title.trim();
 
@@ -167,8 +171,17 @@ export const App: React.FC = () => {
     todos.filter(todo => todo.completed).forEach(todo => handleDelete(todo.id));
   };
 
-  const activeCount = todos.filter(todo => !todo.completed).length;
-  const hasCompleted = todos.some(todo => todo.completed);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const activeCount = useMemo(
+    () => todos.filter(todo => !todo.completed).length,
+    [todos],
+  );
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const hasCompleted = useMemo(
+    () => todos.some(todo => todo.completed),
+    [todos],
+  );
 
   return (
     <div className="todoapp">
@@ -187,7 +200,7 @@ export const App: React.FC = () => {
           onToggleAll={handleToggleAll}
         />
 
-        {(visibleTodos.length > 0 || tempTodo) && (
+        {shouldShowList && (
           <TodoList
             todos={visibleTodos}
             tempTodo={tempTodo}
@@ -198,7 +211,7 @@ export const App: React.FC = () => {
           />
         )}
 
-        {todos.length > 0 && (
+        {Boolean(todos.length) && (
           <Footer
             activeCount={activeCount}
             todos={todos}

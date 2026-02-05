@@ -1,4 +1,5 @@
 import React from 'react';
+import classNames from 'classnames';
 import { NewTodoForm } from './NewTodoForm';
 import { ErrorMessage } from '../App';
 import { Todo } from '../types/Todo';
@@ -7,7 +8,7 @@ type Props = {
   todos: Todo[];
   title: string;
   setTitle: (value: string) => void;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   tempTodo: Todo | null;
   inputRef: React.RefObject<HTMLInputElement>;
   error: ErrorMessage;
@@ -26,14 +27,18 @@ export const Header: React.FC<Props> = ({
   setError,
   onToggleAll,
 }) => {
+  const isAllCompleted = todos.every(todo => todo.completed);
+
+  const toggleAllClass = classNames('todoapp__toggle-all', {
+    active: isAllCompleted,
+  });
+
   return (
     <header className="todoapp__header">
-      {todos.length > 0 && (
+      {Boolean(todos.length) && (
         <button
           type="button"
-          className={`todoapp__toggle-all ${
-            todos.every(todo => todo.completed) ? 'active' : ''
-          }`}
+          className={toggleAllClass}
           data-cy="ToggleAllButton"
           onClick={onToggleAll}
         />

@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { ErrorMessage } from '../App';
 
 type Props = {
   title: string;
   setTitle: (value: string) => void;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   disabled: boolean;
   inputRef: React.RefObject<HTMLInputElement>;
   error: ErrorMessage;
@@ -20,6 +20,17 @@ export const NewTodoForm: React.FC<Props> = ({
   error,
   setError,
 }) => {
+  const handleChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setTitle(event.target.value);
+
+      if (error !== ErrorMessage.None) {
+        setError(ErrorMessage.None);
+      }
+    },
+    [setTitle, error, setError],
+  );
+
   return (
     <form onSubmit={onSubmit}>
       <input
@@ -29,12 +40,7 @@ export const NewTodoForm: React.FC<Props> = ({
         className="todoapp__new-todo"
         placeholder="What needs to be done?"
         value={title}
-        onChange={e => {
-          setTitle(e.target.value);
-          if (error !== ErrorMessage.None) {
-            setError(ErrorMessage.None);
-          }
-        }}
+        onChange={handleChange}
         disabled={disabled}
       />
     </form>
